@@ -38,7 +38,7 @@ describe('Payment', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
 
-    let usdtJettonMaster: SandboxContract<SampleJetton>;
+    let master: SandboxContract<SampleJetton>;
     let usdtJettonWallet: SandboxContract<JettonDefaultWallet>;
 
     let rnsPayment: SandboxContract<Payment>;
@@ -62,7 +62,7 @@ describe('Payment', () => {
 
         // ============================================================ //
         // CREATE TEST USDT JETTON
-        usdtJettonMaster = blockchain.openContract(
+        master = blockchain.openContract(
             await SampleJetton.fromInit(
                 deployer.address,
                 buildOnchainMetadata(usdt_metadata),
@@ -71,7 +71,7 @@ describe('Payment', () => {
         );
 
         // mint 100 token to deployer
-        await usdtJettonMaster.send(deployer.getSender(),
+        await master.send(deployer.getSender(),
             {
                 value: toNano("0.05")
             },
@@ -82,7 +82,7 @@ describe('Payment', () => {
             }
         );
 
-        const jettonWalletAddress = await usdtJettonMaster.getGetWalletAddress(deployer.address);
+        const jettonWalletAddress = await master.getGetWalletAddress(deployer.address);
         usdtJettonWallet = blockchain.openContract(await JettonDefaultWallet.fromAddress(jettonWalletAddress));
 
 
@@ -100,7 +100,7 @@ describe('Payment', () => {
         );
 
         // Create wallet for payment contract
-        const rnsPaymentWalletAddress = await usdtJettonMaster.getGetWalletAddress(rnsPayment.address);
+        const rnsPaymentWalletAddress = await master.getGetWalletAddress(rnsPayment.address);
         rnsPaymentWallet = blockchain.openContract(await JettonDefaultWallet.fromAddress(rnsPaymentWalletAddress));
 
     });
@@ -164,7 +164,7 @@ describe('Payment', () => {
         expect(await sender.getBalance()).toBe(toNano(100))
 
         // mint 100 usdt to sender address
-        await usdtJettonMaster.send(
+        await master.send(
             deployer.getSender(),
             {
                 value: toNano('0.25')
@@ -177,7 +177,7 @@ describe('Payment', () => {
         );
 
         // sender's usdt wallet address
-        const senderJettonWalletAddress = await usdtJettonMaster.getGetWalletAddress(sender.address);
+        const senderJettonWalletAddress = await master.getGetWalletAddress(sender.address);
         const senderJettonWallet = blockchain.openContract(JettonDefaultWallet.fromAddress(senderJettonWalletAddress));
 
 
@@ -242,8 +242,8 @@ describe('Payment', () => {
             }
         })
 
-        const recipientWalletAddress = await usdtJettonMaster.getGetWalletAddress(recipient.address);
-        const feeRecipientWalletAddress = await usdtJettonMaster.getGetWalletAddress(feeRecipient.address);
+        const recipientWalletAddress = await master.getGetWalletAddress(recipient.address);
+        const feeRecipientWalletAddress = await master.getGetWalletAddress(feeRecipient.address);
 
         const recipientWallet = blockchain.openContract(JettonDefaultWallet.fromAddress(recipientWalletAddress));
         const feeRecipientWallet = blockchain.openContract(JettonDefaultWallet.fromAddress(feeRecipientWalletAddress));
