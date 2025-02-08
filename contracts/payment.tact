@@ -102,8 +102,6 @@ contract Payment with Deployable, Ownable, OwnableTransferable, Stoppable, Resum
         self.stopped = false;
         self.sendCost = sendCost;
     }
-    
-    
 
     // Method for manually sending native TONs to different recipients
     receive(msg: PayTonToJetton) {
@@ -113,7 +111,7 @@ contract Payment with Deployable, Ownable, OwnableTransferable, Stoppable, Resum
         nativeReserve(
             max(MINIMAL_CONTRACT_BALANCE, myBalance() - ctx.value)
         , 0);
- 
+        
     }
 
     // Method for manually sending native TONs to different recipients

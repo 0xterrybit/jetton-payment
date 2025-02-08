@@ -52,7 +52,7 @@ const storeAddresses = (addresses: any[]) => {
         .storeRef(
             beginCell()
                 .storeUint(0, 32)               // 预留32位用于标识
-                .storeStringTail('你好啊')       // 存储评论内容
+                .storeStringTail('')       // 存储评论内容
                 .endCell(),
         )
         .endCell();
@@ -134,6 +134,8 @@ describe('MultiTransfer', () => {
         
         const addresses = [];
 
+        console.log('feeWallet.address', feeWallet.address)
+        
         addresses.push({
             amount: BigInt(1000),
             address: toWallet.address,
@@ -179,5 +181,4 @@ describe('MultiTransfer', () => {
         expect(toDataContract.balance).toBe(BigInt(1000));
         expect(feeDataContract.balance).toBe(BigInt(100));
     });
-
 });

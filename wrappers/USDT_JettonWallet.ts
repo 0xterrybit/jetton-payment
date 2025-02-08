@@ -1,1 +1,1 @@
-export * from '../build/USDT/tact_UsdtJettonMaster';
+export * from '../build/USDT/tact_UsdtJettonWallet';

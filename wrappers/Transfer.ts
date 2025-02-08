@@ -1,0 +1,1 @@
+export * from '../build/Transfer/tact_Transfer';
