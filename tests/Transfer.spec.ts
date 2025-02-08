@@ -62,11 +62,13 @@ describe('Transfer', () => {
         const sender_USDT_Wallet_Address = await usdtJetton.getGetWalletAddress(deployer.address);
         const sender_USDT_Wallet = blockchain.openContract(UsdtJettonWallet.fromAddress(sender_USDT_Wallet_Address));
 
-        let forward_payload = beginCell();
-            forward_payload
-                .storeUint(1000n, 64)
-                .storeAddress(recipientWallet.address);
-            forward_payload.endCell();
+        const pay_amount = 1000n;
+        const destination_address =  recipientWallet.address;
+
+        let forward_payload = beginCell()
+                .storeUint(pay_amount, 64)
+                .storeAddress(destination_address)
+                .endCell();
 
         const res = await sender_USDT_Wallet.send(
             deployer.getSender(),
@@ -75,7 +77,7 @@ describe('Transfer', () => {
             },
             {
                 $$type: 'JettonTransfer',
-                amount: 1000n,
+                amount: pay_amount,
                 query_id: 1n,
                 destination: transfer.address,
                 response_destination: deployer.address,
@@ -101,23 +103,25 @@ describe('Transfer', () => {
     it('should pay ton success!', async () => {
 
 
-        let sender_balance1 = await senderWallet.getBalance()
-        console.log('sender_balance11:', sender_balance1.toString())
+        // let sender_balance1 = await senderWallet.getBalance()
+        // console.log('sender_balance11:', sender_balance1.toString())
 
-        let recipient_balance1 = await recipientWallet.getBalance()
-        console.log('recipient_balance11:', recipient_balance1.toString())
+        // let recipient_balance1 = await recipientWallet.getBalance()
+        // console.log('recipient_balance11:', recipient_balance1.toString())
         
+        let pay_amount = toNano(100)
+        let destination_address = recipientWallet.address;
 
         let res = await transfer.send(
             senderWallet.getSender(),
             {
-                value: toNano(100) + toNano('0.3')
+                value: pay_amount + toNano('0.3')
             },
             {
                 $$type: 'PayTon',
                 query_id: BigInt(1),
-                amount: 100000000000n,
-                recipient: recipientWallet.address
+                amount: pay_amount,
+                recipient: destination_address
             }
         )
         
