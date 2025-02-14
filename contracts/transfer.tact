@@ -48,6 +48,9 @@ struct PaymentTONEvent {
 contract Transfer with Deployable {
     owner: Address;
     
+    gasConsumption: Int = ton("0.002");
+    minTonsForStorage: Int = ton("0.01");
+
     init(owner: Address) {
         self.owner = owner;
     }
@@ -82,18 +85,10 @@ contract Transfer with Deployable {
         send(SendParameters
         {
             to: msg.recipient,
-            value: PAY_TON_COST + msg.amount,
+            value: msg.amount,
             mode: SendPayGasSeparately | SendIgnoreErrors,
             bounce: false
         });
-
-        send(SendParameters{
-            to: sender(),
-            value: 0,
-            mode: SendRemainingValue + SendIgnoreErrors,
-            bounce: false,
-        });
-
          emit(PaymentTONEvent{
             query_id: msg.query_id,
             amount: msg.amount,
@@ -106,52 +101,88 @@ contract Transfer with Deployable {
     }
 
     receive(msg: JettonTransferNotification) {
+     
         let ctx: Context = context(); // Check sender
-        let remianValue: Int = ctx.value;
-
         let payload: Slice = msg.forward_payload;
-
-        let amount: Int = 0;
+        let remianValue: Int = ctx.value;
+        let allCount: Int = 0;
         
         let receiver: Address = self.owner;
+        let receiverAmount: Int = 0;
         
         if (!payload.empty()) {
-            amount = payload.loadUint(64);  
-            receiver = payload.loadAddress();  
-
-            let emptySlice: Slice = emptySlice();     
-             send(SendParameters{
-                to: ctx.sender,
-                value: ton("0.06"),
-                mode: SendIgnoreErrors,
-                bounce: false,
-                body: JettonTransfer{
-                    query_id: msg.query_id,
-                    amount: amount,
-                    destination: receiver,
-                    response_destination: msg.sender,
-                    forward_ton_amount: 0,
-                    forward_payload: emptySlice
-                }.toCell()
-            });
-
-            send(SendParameters{
-                to: msg.sender,
-                value: remianValue,
-                mode: SendIgnoreErrors,
-                bounce: false,
-                body: emptyCell()
-            });
-
-            emit(PaymentUSDTEvent{
-                query_id: msg.query_id,
-                amount: amount,
-                source: self.owner,
-                destination: receiver,
-            }.toCell());
-
-            dump("Pay USDT Done");
+            allCount = payload.loadUint(64);  
         }
+
+        let allConsume: Int = (allCount + 1) * ctx.readForwardFee() + (allCount + 1) * self.gasConsumption + self.minTonsForStorage + allCount * ton("0.06") + allCount;
+        require(remianValue > allConsume, "Not enough funds to transfer");
+        remianValue = remianValue - allConsume;
+
+        if (allCount > 0) {
+            let emptySlice: Slice = emptySlice();           
+            let topCell: Cell = payload.loadRef();
+            let topSlice: Slice = topCell.asSlice();
+            let commentCell: Cell = payload.loadRef();
+            let commentSlice: Slice = commentCell.asSlice();
+            let isEmpty: Bool = commentSlice.empty();
+            let forwardAmount: Int = isEmpty ? 0 : ton("0.005");
+            let forwardPayload: Slice = isEmpty ? emptySlice : commentSlice;
+            let currentRef: Cell = topSlice.loadRef();
+            let currentSlice: Slice = currentRef.asSlice();
+            let i = 0;
+            repeat(allCount) {
+                let amount: Int = currentSlice.loadUint(64);
+                let address: Address = currentSlice.loadAddress();
+                
+                i = i + 1;
+                if (i % 9 == 0) {
+                    let topRef: Cell = topSlice.loadRef();
+                    topSlice = topRef.asSlice();
+                    currentRef = topSlice.loadRef();
+                    currentSlice = currentRef.asSlice();
+                } else if (i % 3 == 0) {
+                    currentRef = topSlice.loadRef();
+                    currentSlice = currentRef.asSlice();
+                }
+
+                if(i == 1) {
+                    receiver = address;
+                    receiverAmount = amount;
+                }
+
+                send(SendParameters{
+                    to: ctx.sender,
+                    value: ton("0.06"),
+                    mode: SendIgnoreErrors,
+                    bounce: false,
+                    body: JettonTransfer{
+                        query_id: msg.query_id,
+                        amount: amount,
+                        destination: address,
+                        response_destination: msg.sender,
+                        forward_ton_amount: forwardAmount,
+                        forward_payload: forwardPayload
+                    }.toCell()
+                });
+            }
+        }
+
+        send(SendParameters{
+            to: msg.sender,
+            value: remianValue,
+            mode: SendIgnoreErrors,
+            bounce: false,
+            body: emptyCell()
+        });
+
+         emit(PaymentUSDTEvent{
+            query_id: msg.query_id,
+            amount: receiverAmount,
+            source: self.owner,
+            destination: receiver,
+        }.toCell());
+
+        dump("Transfer done");
     }
 
     get fun owner(): Address {
